@@ -6,13 +6,13 @@
 # See: https://github.com/github/gitignore/tree/main/Global
 #
 .utmp/
-/JengaAR/[Ll]ibrary/
-/JengaAR/[Tt]emp/
-/JengaAR/[Oo]bj/
-/JengaAR/[Bb]uild/
-/JengaAR/[Bb]uilds/
-/JengaAR/[Ll]ogs/
-/JengaAR/[Uu]ser[Ss]ettings/
+/JengaN/[Ll]ibrary/
+/JengaN/[Tt]emp/
+/JengaN/[Oo]bj/
+/JengaN/[Bb]uild/
+/JengaN/[Bb]uilds/
+/JengaN/[Ll]ogs/
+/JengaN/[Uu]ser[Ss]ettings/
 *.log
 
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be commited to version control.
@@ -21,10 +21,10 @@
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
-/JengaAR/[Mm]emoryCaptures/
+/JengaN/[Mm]emoryCaptures/
 
 # Recordings can get excessive in size
-/JengaAR/[Rr]ecordings/
+/JengaN/[Rr]ecordings/
 
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
@@ -85,22 +85,22 @@ InitTestScene*.unity*
 
 # Addressables default ignores, before user customizations
 /ServerData
-/JengaAR/[Aa]ssets/StreamingAssets/aa*
-/JengaAR/[Aa]ssets/AddressableAssetsData/link.xml*
-/JengaAR/[Aa]ssets/Addressables_Temp*
+/JengaN/[Aa]ssets/StreamingAssets/aa*
+/JengaN/[Aa]ssets/AddressableAssetsData/link.xml*
+/JengaN/[Aa]ssets/Addressables_Temp*
 # By default, Addressables content builds will generate addressables_content_state.bin
 # files in platform-specific subfolders, for example:
 # /Assets/AddressableAssetsData/OSX/addressables_content_state.bin
-/JengaAR/[Aa]ssets/AddressableAssetsData/*/*.bin*
+/JengaN/[Aa]ssets/AddressableAssetsData/*/*.bin*
 
 # Visual Scripting auto-generated files
-/JengaAR/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
-/JengaAR/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
-/JengaAR/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
-/JengaAR/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
+/JengaN/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db
+/JengaN/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Flow/UnitOptions.db.meta
+/JengaN/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers
+/JengaN/[Aa]ssets/Unity.VisualScripting.Generated/VisualScripting.Core/Property Providers.meta
 
 # Auto-generated scenes by play mode tests
-/JengaAR/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+/JengaN/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
 # Auto-generated cache in Assets folder
-/JengaAR/[Aa]ssets/[Ss]ceneDependencyCache*
+/JengaN/[Aa]ssets/[Ss]ceneDependencyCache*
