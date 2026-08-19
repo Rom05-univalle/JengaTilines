@@ -692,7 +692,7 @@ MonoBehaviour:
   <trackablesChanged>k__BackingField:
     m_PersistentCalls:
       m_Calls: []
-  m_RaycastPrefab: {fileID: 0}
+  m_RaycastPrefab: {fileID: 1106261434899924943, guid: 85d2f4159f513d54385bf87f71b1a6fc, type: 3}
 --- !u!114 &2135459566
 MonoBehaviour:
   m_ObjectHideFlags: 0
