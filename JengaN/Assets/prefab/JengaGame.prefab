@@ -1,0 +1,103 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2355325557785131535
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5386624386720452569}
+  - component: {fileID: 5403235971717382959}
+  - component: {fileID: 6360078385286878798}
+  - component: {fileID: 670495009149117205}
+  - component: {fileID: 5209033388792501093}
+  m_Layer: 0
+  m_Name: JengaGame
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5386624386720452569
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2355325557785131535}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0, y: -0, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5403235971717382959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2355325557785131535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7dd214d8ef1130c43b0d45f0bc64ed1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JengaTowerGenerator
+  blockWidth: 0.025
+  blockHeight: 0.015
+  blockLength: 0.075
+  blockGap: 0.0002
+  numLevels: 18
+  blockPrefab: {fileID: 2180616751560939048, guid: 1c68160c28bf5ae4095f48b62a3d9696, type: 3}
+  blockColors:
+  - {r: 0.18, g: 0.64, b: 0.6, a: 1}
+  - {r: 0.92, g: 0.4, b: 0.33, a: 1}
+  - {r: 0.95, g: 0.65, b: 0.22, a: 1}
+--- !u!114 &6360078385286878798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2355325557785131535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 892164e3e8ad87448b69c50a29e31bee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JengaGameManager
+  numPlayers: 3
+  settlingTime: 3
+  collapseThreshold: 0.05
+  playerColors:
+  - {r: 0, g: 0.8, b: 0.8, a: 1}
+  - {r: 1, g: 0.4, b: 0.4, a: 1}
+  - {r: 1, g: 0.8, b: 0.2, a: 1}
+  selectionHighlightColor: {r: 0.9, g: 0.8, b: 0.1, a: 1}
+--- !u!114 &670495009149117205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2355325557785131535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9af17ad7bece0ef46906ea22444f3fb3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JengaInteractionManager
+--- !u!114 &5209033388792501093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2355325557785131535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e159d05fd27be2c458c42663fbbc5a60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JengaUIManager

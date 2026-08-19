@@ -676,7 +676,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d06ffdafefa286a49a88df89b0292a67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlaceObjectOnPlane
-  objectToPlace: {fileID: 2180616751560939048, guid: 1c68160c28bf5ae4095f48b62a3d9696, type: 3}
+  objectToPlace: {fileID: 2355325557785131535, guid: a00646e22019a324f9493f9c958b74ab, type: 3}
 --- !u!114 &2135459565
 MonoBehaviour:
   m_ObjectHideFlags: 0

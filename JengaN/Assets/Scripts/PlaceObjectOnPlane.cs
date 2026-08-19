@@ -53,25 +53,70 @@ public class PlaceObjectOnPlane : MonoBehaviour
         Debug.Log("[JengaAR] Update corriendo. Touches activos: " + Touch.activeTouches.Count);
         // --- Fin logs de diagnóstico ---
 
-        if (Touch.activeTouches.Count == 0)
-            return;
+        Vector2 screenPosition = Vector2.zero;
+        bool touchDetected = false;
 
-        var touch = Touch.activeTouches[0];
-
-        if (touch.phase != TouchPhase.Began)
-            return;
-
-        Debug.Log($"[JengaAR] Toque detectado en: {touch.screenPosition}");
-
-        if (raycastManager.Raycast(touch.screenPosition, hits, TrackableType.PlaneWithinPolygon))
+        #if UNITY_EDITOR
+        var mouse = UnityEngine.InputSystem.Mouse.current;
+        if (mouse != null && mouse.leftButton.wasPressedThisFrame)
         {
-            Debug.Log($"[JengaAR] Raycast pegó en un plano. Hits: {hits.Count}");
-            Pose hitPose = hits[0].pose;
+            screenPosition = mouse.position.ReadValue();
+            touchDetected = true;
+            Debug.Log($"[JengaAR] Editor Click detectado en: {screenPosition}");
+        }
+        #endif
 
+        if (!touchDetected)
+        {
+            if (Touch.activeTouches.Count == 0)
+                return;
+
+            var touch = Touch.activeTouches[0];
+            if (touch.phase != TouchPhase.Began)
+                return;
+
+            screenPosition = touch.screenPosition;
+            touchDetected = true;
+            Debug.Log($"[JengaAR] Toque de pantalla detectado en: {screenPosition}");
+        }
+
+        bool hitSuccessful = false;
+        Pose hitPose = default;
+
+        if (raycastManager.Raycast(screenPosition, hits, TrackableType.PlaneWithinPolygon))
+        {
+            hitSuccessful = true;
+            hitPose = hits[0].pose;
+            Debug.Log($"[JengaAR] Raycast pegó en un plano AR. Hits: {hits.Count} en {hitPose.position}");
+        }
+        #if UNITY_EDITOR
+        else
+        {
+            // Fallback para pruebas en el Editor: intersecamos un plano horizontal en Y = 0 (suelo simulado)
+            if (Camera.main != null)
+            {
+                Ray ray = Camera.main.ScreenPointToRay(screenPosition);
+                Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+                if (groundPlane.Raycast(ray, out float enter))
+                {
+                    hitSuccessful = true;
+                    hitPose = new Pose(ray.GetPoint(enter), Quaternion.identity);
+                    Debug.Log($"[JengaAR] Editor Fallback: Simulación de plano pegó en {hitPose.position}");
+                }
+            }
+        }
+        #endif
+
+        if (hitSuccessful)
+        {
             if (spawnedObject == null)
             {
                 Debug.Log("[JengaAR] Instanciando objeto por primera vez.");
                 spawnedObject = Instantiate(objectToPlace, hitPose.position, hitPose.rotation);
+                
+                // Deshabilitar este script para no mover la torre durante el juego
+                this.enabled = false;
+                Debug.Log("[JengaAR] PlaceObjectOnPlane deshabilitado para iniciar el juego.");
             }
             else
             {
@@ -81,7 +126,18 @@ public class PlaceObjectOnPlane : MonoBehaviour
         }
         else
         {
-            Debug.Log("[JengaAR] Raycast NO pegó en ningún plano.");
+            Debug.Log("[JengaAR] Raycast NO pegó en ningún plano válido.");
         }
+    }
+
+    public void ResetSpawning()
+    {
+        if (spawnedObject != null)
+        {
+            Destroy(spawnedObject);
+            spawnedObject = null;
+        }
+        this.enabled = true;
+        Debug.Log("[JengaAR] PlaceObjectOnPlane re-habilitado para nuevo posicionamiento.");
     }
 }
