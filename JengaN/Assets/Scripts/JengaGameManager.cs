@@ -213,57 +213,63 @@ public class JengaGameManager : MonoBehaviour
     private IEnumerator SettlingRoutine()
     {
         currentState = JengaGameState.Settling;
-        selectedBlock = null; // Liberar referencia ya colocado
-        Debug.Log("[JengaAR] Bloque colocado. Verificando estabilidad...");
+        selectedBlock = null;
+        Debug.Log("[JengaAR] Bloque colocado. Verificando estabilidad por posición...");
 
-        // Liberar SOLO los bloques que NO son kinematic para verificar caída
-        // (los que NO están en la base de la torre)
-        List<JengaBlock> nonKinematicBlocks = new List<JengaBlock>();
-        foreach (var block in towerGenerator.AllBlocks)
+        // Esperar un poco para que se asiente visualmente
+        yield return new WaitForSeconds(1.5f);
+
+        // Verificar estabilidad: ¿El bloque colocado está dentro de una zona válida?
+        bool isStable = CheckPlacedBlockStability();
+
+        if (isStable)
         {
-            if (block != null)
-            {
-                Rigidbody rb = block.GetComponent<Rigidbody>();
-                if (rb != null && rb.isKinematic)
-                {
-                    rb.isKinematic = false;  // Liberar temporalmente
-                    rb.linearVelocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-                    nonKinematicBlocks.Add(block);
-                }
-            }
-        }
-
-        // Esperar a que se asiente
-        yield return new WaitForSeconds(2.0f);
-
-        // Verificar si la torre colapsó
-        bool towerStable = !CheckIfTowerCollapsed();
-
-        if (towerStable)
-        {
-            // Torre estable: reinvertir a kinematic
-            foreach (var block in nonKinematicBlocks)
-            {
-                if (block != null)
-                {
-                    Rigidbody rb = block.GetComponent<Rigidbody>();
-                    if (rb != null && !rb.isKinematic)
-                    {
-                        rb.isKinematic = true;  // Volver a congelar
-                        Debug.Log($"[JengaAR] Bloque {block.name} recongelado.");
-                    }
-                }
-            }
-            
-            Debug.Log("[JengaAR] Torre estable. Pasando al siguiente turno.");
+            Debug.Log("[JengaAR] Bloque en posición estable. Siguiente turno.");
             NextTurn();
         }
         else
         {
-            Debug.LogWarning("[JengaAR] Torre se desestabilizó.");
+            Debug.LogWarning("[JengaAR] Bloque fuera de la zona válida. ¡Torre derribada!");
             TriggerGameOver();
         }
+    }
+
+    private bool CheckPlacedBlockStability()
+    {
+        // Obtener el último bloque colocado (el que está en la cima)
+        if (towerGenerator == null || towerGenerator.AllBlocks.Count == 0)
+            return true;
+
+        JengaBlock topBlock = towerGenerator.AllBlocks[towerGenerator.AllBlocks.Count - 1];
+        if (topBlock == null)
+            return true;
+
+        // Verificar si el bloque está dentro de los límites de la base
+        // La base tiene longitud blockLength * 1.3f en X y Z
+        float baseMaxX = (towerGenerator.BlockLength * 1.3f) / 2f + 0.05f;  // Margen de 5cm
+        float baseMaxZ = (towerGenerator.BlockLength * 1.3f) / 2f + 0.05f;
+
+        Vector3 blockLocalPos = topBlock.transform.localPosition;
+        
+        // Verificar que esté dentro de los límites XZ
+        bool isWithinBounds = Mathf.Abs(blockLocalPos.x) < baseMaxX && 
+                              Mathf.Abs(blockLocalPos.z) < baseMaxZ;
+
+        if (!isWithinBounds)
+        {
+            Debug.LogWarning($"[JengaAR] Bloque fuera de límites. Pos: {blockLocalPos}");
+            return false;
+        }
+
+        // Verificar que la altura sea razonable (dentro de la torre)
+        float maxHeight = towerGenerator.TopLevel * (towerGenerator.BlockHeight + 0.002f) + towerGenerator.BlockHeight;
+        if (blockLocalPos.y > maxHeight + 0.1f)
+        {
+            Debug.LogWarning($"[JengaAR] Bloque demasiado alto. Height: {blockLocalPos.y}");
+            return false;
+        }
+
+        return true;
     }
 
     private void NextTurn()
