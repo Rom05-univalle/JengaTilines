@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.XR.ARFoundation;
 
 public enum JengaGameState
@@ -213,14 +214,55 @@ public class JengaGameManager : MonoBehaviour
     {
         currentState = JengaGameState.Settling;
         selectedBlock = null; // Liberar referencia ya colocado
-        Debug.Log("[JengaAR] Bloque colocado. Asentando físicas...");
+        Debug.Log("[JengaAR] Bloque colocado. Verificando estabilidad...");
 
-        yield return new WaitForSeconds(settlingTime);
-
-        // Si la rutina termina y la torre sigue de pie, pasar de turno
-        if (currentState == JengaGameState.Settling)
+        // Liberar SOLO los bloques que NO son kinematic para verificar caída
+        // (los que NO están en la base de la torre)
+        List<JengaBlock> nonKinematicBlocks = new List<JengaBlock>();
+        foreach (var block in towerGenerator.AllBlocks)
         {
+            if (block != null)
+            {
+                Rigidbody rb = block.GetComponent<Rigidbody>();
+                if (rb != null && rb.isKinematic)
+                {
+                    rb.isKinematic = false;  // Liberar temporalmente
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                    nonKinematicBlocks.Add(block);
+                }
+            }
+        }
+
+        // Esperar a que se asiente
+        yield return new WaitForSeconds(2.0f);
+
+        // Verificar si la torre colapsó
+        bool towerStable = !CheckIfTowerCollapsed();
+
+        if (towerStable)
+        {
+            // Torre estable: reinvertir a kinematic
+            foreach (var block in nonKinematicBlocks)
+            {
+                if (block != null)
+                {
+                    Rigidbody rb = block.GetComponent<Rigidbody>();
+                    if (rb != null && !rb.isKinematic)
+                    {
+                        rb.isKinematic = true;  // Volver a congelar
+                        Debug.Log($"[JengaAR] Bloque {block.name} recongelado.");
+                    }
+                }
+            }
+            
+            Debug.Log("[JengaAR] Torre estable. Pasando al siguiente turno.");
             NextTurn();
+        }
+        else
+        {
+            Debug.LogWarning("[JengaAR] Torre se desestabilizó.");
+            TriggerGameOver();
         }
     }
 
@@ -237,36 +279,29 @@ public class JengaGameManager : MonoBehaviour
     }
 
     private IEnumerator EnableCollapseCheckingAfterDelay()
-    {
-        canCheckCollapse = false;
-        yield return new WaitForSeconds(0.5f); // Esperar un instante inicial
-        
-        // Habilitar física para todos los bloques
-        if (towerGenerator != null)
-        {
-            foreach (var block in towerGenerator.AllBlocks)
-            {
-                if (block != null)
-                {
-                    block.SetKinematic(false);
-                }
-            }
-            Debug.Log("[JengaAR] Físicas activadas en todos los bloques (isKinematic = false).");
-        }
-        
-        yield return new WaitForSeconds(1.5f); // Tiempo de gracia para asentamiento físico bajo gravedad
-        canCheckCollapse = true;
-        Debug.Log("[JengaAR] Monitoreo de colapso de la torre activado.");
-    }
+{
+    canCheckCollapse = false;
+
+    Debug.Log("[JengaAR] Torre generada - Todos los bloques KINEMATIC (permanecerán así).");
+    
+    // Solo esperar a que todo esté listo
+    yield return new WaitForSeconds(2.0f);
+    
+    canCheckCollapse = true;
+    Debug.Log("[JengaAR] Torre lista. Sistema en modo KINEMATIC permanente.");
+    Debug.Log("[JengaAR] Los bloques SOLO se liberan cuando necesitan verificar caída.");
+}
 
     private bool CheckIfTowerCollapsed()
     {
         if (!canCheckCollapse)
             return false;
 
-        float collapseY = baseHeight - collapseThreshold;
+        // CORRECCIÓN: Usar la posición actual en Y de la base, no la guardada en Start()
+        float currentBaseHeight = transform.position.y;
+        float collapseY = currentBaseHeight - collapseThreshold;
 
-        // Comprobar si algún bloque (que no sea el que se está manipulando) se ha caído del plano base
+        // Comprobar si algún bloque se ha caído del plano base
         foreach (var block in towerGenerator.AllBlocks)
         {
             if (block == null) continue;
@@ -276,31 +311,7 @@ public class JengaGameManager : MonoBehaviour
 
             if (block.transform.position.y < collapseY)
             {
-                Debug.LogWarning($"[JengaAR] Bloque {block.name} cayó por debajo de {collapseY}m (Su Y: {block.transform.position.y}m, Base Y: {baseHeight}m). ¡Torre derribada!");
-                
-                // Imprimir diagnóstico completo de todas las alturas para encontrar el problema exacto
-                Debug.LogWarning($"[JengaAR] --- INICIO DIAGNÓSTICO FÍSICO ---");
-                Debug.LogWarning($"[JengaAR] Parent Game Object: {gameObject.name} en pos {transform.position}");
-                var bp = transform.Find("JengaBasePlate");
-                if (bp != null)
-                {
-                    Debug.LogWarning($"[JengaAR] Base Plate: {bp.name} en pos {bp.position}, localScale: {bp.localScale}");
-                }
-                else
-                {
-                    Debug.LogWarning($"[JengaAR] Base Plate NO ENCONTRADA como hijo.");
-                }
-
-                foreach (var b in towerGenerator.AllBlocks)
-                {
-                    if (b != null)
-                    {
-                        Rigidbody rb = b.GetComponent<Rigidbody>();
-                        Debug.Log($"[JengaAR] > {b.name}: LocalY={b.transform.localPosition.y:F4}, WorldY={b.transform.position.y:F4}, isKinematic={rb.isKinematic}, velocity={rb.linearVelocity}");
-                    }
-                }
-                Debug.LogWarning($"[JengaAR] --- FIN DIAGNÓSTICO FÍSICO ---");
-                
+                Debug.LogWarning($"[JengaAR] Bloque {block.name} cayó por debajo de {collapseY}m. ¡Torre derribada!");
                 return true;
             }
         }

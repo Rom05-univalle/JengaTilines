@@ -81,7 +81,7 @@ public class JengaBlock : MonoBehaviour
         // Regresar a la posición inicial en local
         transform.localPosition = startLocalPosition;
         transform.localRotation = startLocalRotation;
-        SetKinematic(false);
+        SetKinematic(true);  // Mantener congelado - NO liberar kinematic
         SetSelected(false, Color.clear);
         
         if (rb != null)
@@ -114,5 +114,23 @@ public class JengaBlock : MonoBehaviour
     public Vector3 GetStartLocalPosition()
     {
         return startLocalPosition;
+    }
+
+    public void ApplyStabilizationConstraints()
+    {
+        if (rb != null)
+        {
+            // Congelar posición y rotación durante la estabilización inicial
+            rb.constraints = RigidbodyConstraints.FreezeAll;
+        }
+    }
+
+    public void RemoveStabilizationConstraints()
+    {
+        if (rb != null)
+        {
+            // Liberar restricciones pero mantener damping alto
+            rb.constraints = RigidbodyConstraints.None;
+        }
     }
 }

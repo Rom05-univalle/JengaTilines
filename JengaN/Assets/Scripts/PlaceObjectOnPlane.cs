@@ -92,20 +92,16 @@ public class PlaceObjectOnPlane : MonoBehaviour
         #if UNITY_EDITOR
         else
         {
-            // Fallback para pruebas en el Editor: intersecamos un plano horizontal en Y = 0 (suelo simulado)
+            // Fallback directo: Aparecer 1.5 metros al frente y medio metro abajo de la cámara
             if (Camera.main != null)
             {
-                Ray ray = Camera.main.ScreenPointToRay(screenPosition);
-                Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
-                if (groundPlane.Raycast(ray, out float enter))
-                {
-                    hitSuccessful = true;
-                    hitPose = new Pose(ray.GetPoint(enter), Quaternion.identity);
-                    Debug.Log($"[JengaAR] Editor Fallback: Simulación de plano pegó en {hitPose.position}");
-                }
+                hitSuccessful = true;
+                Vector3 spawnPos = Camera.main.transform.position + Camera.main.transform.forward * 1.5f + Vector3.down * 0.5f;
+                hitPose = new Pose(spawnPos, Quaternion.identity);
+                Debug.Log($"[JengaAR] Editor Fallback: Torre forzada en {hitPose.position}");
             }
         }
-        #endif
+#endif
 
         if (hitSuccessful)
         {

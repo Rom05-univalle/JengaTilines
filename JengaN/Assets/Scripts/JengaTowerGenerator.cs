@@ -7,7 +7,7 @@ public class JengaTowerGenerator : MonoBehaviour
     [SerializeField] private float blockWidth = 0.05f;   // 5 cm
     [SerializeField] private float blockHeight = 0.03f;  // 3 cm
     [SerializeField] private float blockLength = 0.15f;  // 15 cm (3x width)
-    [SerializeField] private float blockGap = 0.0005f;   // 0.5 mm to prevent initial physics collision glitches
+    [SerializeField] private float blockGap = 0.025f;   // 25mm - GAP GRANDE para evitar solapamientos
     [SerializeField] private int numLevels = 18;         // 18 levels * 3 blocks = 54 blocks
     
     [Header("References")]
@@ -23,6 +23,7 @@ public class JengaTowerGenerator : MonoBehaviour
     };
 
     private List<JengaBlock> allBlocks = new List<JengaBlock>();
+    private float verticalGap = 0.002f; // Espacio de seguridad vertical mínimo (aumentado para estabilidad)
     
     // Tracking current tower state
     private int topLevel = 17;
@@ -87,42 +88,44 @@ public class JengaTowerGenerator : MonoBehaviour
         BoxCollider baseCol = basePlate.GetComponent<BoxCollider>();
         if (baseCol == null) baseCol = basePlate.AddComponent<BoxCollider>();
         baseCol.sharedMaterial = blockPhysicsMaterial;
-        baseCol.contactOffset = 0.0005f;
+        baseCol.contactOffset = 0.005f;  // AUMENTADO para evitar penetraciones
 
         Rigidbody baseRb = basePlate.GetComponent<Rigidbody>();
         if (baseRb == null) baseRb = basePlate.AddComponent<Rigidbody>();
         baseRb.isKinematic = true; // Cinemático para que sea una base fija e inamovible
 
-        // Alinear la física para mejorar la estabilidad inicial
-        Physics.defaultSolverIterations = 15;
-        Physics.defaultSolverVelocityIterations = 15;
+        // Alinear la física para máxima estabilidad
+        Physics.defaultSolverIterations = 45;
+        Physics.defaultSolverVelocityIterations = 45;
+        Physics.bounceThreshold = 2f;
+        Physics.sleepThreshold = 0.005f;  // Bloques duermen cuando son estables
+        Physics.defaultMaxDepenetrationVelocity = 1.5f;  // Resolver lentamente
+        Physics.gravity = new Vector3(0, -9.81f, 0);  // Gravedad NORMAL
 
-        float verticalGap = 0.0002f; // 0.2 mm de espacio de seguridad vertical para evitar jitter en spawn
+        float verticalGap = 0.002f;  // Espacio vertical también aumentado
+        float baseSurfaceY = 0.0f;   // La superficie superior de la placa base está en Y = 0
 
         for (int l = 0; l < numLevels; l++)
         {
-            // Determinar orientación:
-            // Niveles pares (0, 2, ...): a lo largo del eje X (rotación 0°)
-            // Niveles impares (1, 3, ...): a lo largo del eje Z (rotación 90° en Y)
             bool isEvenLevel = (l % 2 == 0);
             
             for (int i = 0; i < 3; i++)
             {
-                // Calcular posición local del bloque
                 float offset = (i - 1) * (blockWidth + blockGap);
                 Vector3 localPos = Vector3.zero;
                 Quaternion localRot = Quaternion.identity;
 
+                // CORRECCIÓN: Calcular la altura desde la superficie de la base (baseSurfaceY)
+                float blockPosY = baseSurfaceY + (l * (blockHeight + verticalGap)) + (blockHeight / 2f);
+
                 if (isEvenLevel)
                 {
-                    // Bloques alineados a lo largo de X, espaciados en Z
-                    localPos = new Vector3(0, l * (blockHeight + verticalGap) + (blockHeight / 2f), offset);
+                    localPos = new Vector3(0, blockPosY, offset);
                     localRot = Quaternion.Euler(0, 0, 0);
                 }
                 else
                 {
-                    // Bloques alineados a lo largo de Z, espaciados en X (rotados 90 grados)
-                    localPos = new Vector3(offset, l * (blockHeight + verticalGap) + (blockHeight / 2f), 0);
+                    localPos = new Vector3(offset, blockPosY, 0);
                     localRot = Quaternion.Euler(0, 90, 0);
                 }
 
@@ -151,10 +154,10 @@ public class JengaTowerGenerator : MonoBehaviour
                 Rigidbody rb = blockObj.GetComponent<Rigidbody>();
                 if (rb == null) rb = blockObj.AddComponent<Rigidbody>();
                 
-                rb.mass = 0.1f;
-                rb.linearDamping = 0.05f;
-                rb.angularDamping = 0.05f;
-                rb.isKinematic = true; // Cinemático al inicio para evitar explosiones por asentamiento de física
+                rb.mass = 0.05f;
+                rb.linearDamping = 1.5f;   // Alto damping para evitar oscilaciones
+                rb.angularDamping = 1.5f;  // Alto damping para evitar rotaciones
+                rb.isKinematic = true;  // KINEMATIC al inicio - congelado para estabilidad
                 rb.solverIterations = 25; // Más iteraciones para hacer el bloque físicamente estable
                 rb.solverVelocityIterations = 25;
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
@@ -162,7 +165,7 @@ public class JengaTowerGenerator : MonoBehaviour
                 BoxCollider col = blockObj.GetComponent<BoxCollider>();
                 if (col == null) col = blockObj.AddComponent<BoxCollider>();
                 col.sharedMaterial = blockPhysicsMaterial;
-                col.contactOffset = 0.0005f; // Ajustar distancia de contacto para máxima precisión y estabilidad
+                col.contactOffset = 0.001f;  // Pequeño pero estable
 
                 // Añadir script de comportamiento de bloque
                 JengaBlock jengaBlock = blockObj.GetComponent<JengaBlock>();
@@ -222,12 +225,12 @@ public class JengaTowerGenerator : MonoBehaviour
 
         if (isEvenLevel)
         {
-            localPos = new Vector3(0, checkLevel * blockHeight + (blockHeight / 2f), offset);
+            localPos = new Vector3(0, checkLevel * (blockHeight + verticalGap) + (blockHeight / 2f), offset);
             localRot = Quaternion.Euler(0, 0, 0);
         }
         else
         {
-            localPos = new Vector3(offset, checkLevel * blockHeight + (blockHeight / 2f), 0);
+            localPos = new Vector3(offset, checkLevel * (blockHeight + verticalGap) + (blockHeight / 2f), 0);
             localRot = Quaternion.Euler(0, 90, 0);
         }
     }
