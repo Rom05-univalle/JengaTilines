@@ -16,6 +16,8 @@ public class PlaceObjectOnPlane : MonoBehaviour
     private ARPlaneManager planeManager;
     private List<ARRaycastHit> hits = new List<ARRaycastHit>();
     private GameObject spawnedObject;
+    private float timeWaitingForPlane = 0f;
+    private const float PLANE_DETECTION_TIMEOUT = 5f;  // Timeout de 5 segundos
 
     void Awake()
     {
@@ -38,20 +40,15 @@ public class PlaceObjectOnPlane : MonoBehaviour
 
     void Update()
     {
-        // --- Logs de diagnóstico ---
-        Debug.Log("[JengaAR] ARSession state: " + ARSession.state);
+        // Incrementar timeout
+        timeWaitingForPlane += Time.deltaTime;
 
-        if (planeManager != null)
+        // Logs de diagnóstico (reducir frecuencia)
+        if (Time.frameCount % 30 == 0)  // Solo cada 30 frames para no saturar
         {
-            Debug.Log("[JengaAR] Planos detectados: " + planeManager.trackables.count);
+            Debug.Log("[JengaAR] Planos detectados: " + (planeManager != null ? planeManager.trackables.count : 0));
+            Debug.Log("[JengaAR] Tiempo esperando plano: " + timeWaitingForPlane.ToString("F1") + "s");
         }
-        else
-        {
-            Debug.Log("[JengaAR] planeManager es null, no se puede contar planos. ¿Está el componente AR Plane Manager en el XR Origin?");
-        }
-
-        Debug.Log("[JengaAR] Update corriendo. Touches activos: " + Touch.activeTouches.Count);
-        // --- Fin logs de diagnóstico ---
 
         Vector2 screenPosition = Vector2.zero;
         bool touchDetected = false;
@@ -83,22 +80,35 @@ public class PlaceObjectOnPlane : MonoBehaviour
         bool hitSuccessful = false;
         Pose hitPose = default;
 
-        if (raycastManager.Raycast(screenPosition, hits, TrackableType.PlaneWithinPolygon))
+        // OPCIÓN 1: Raycast a planos detectados (menos restrictivo)
+        if (raycastManager.Raycast(screenPosition, hits, TrackableType.Planes))
         {
             hitSuccessful = true;
             hitPose = hits[0].pose;
-            Debug.Log($"[JengaAR] Raycast pegó en un plano AR. Hits: {hits.Count} en {hitPose.position}");
+            Debug.Log($"[JengaAR] Raycast pegó en un plano. Hits: {hits.Count} en {hitPose.position}");
+            timeWaitingForPlane = 0f;  // Reset timeout cuando detecta
+        }
+        // OPCIÓN 2: Si no detecta plano, permitir colocación directa después de 5 segundos
+        else if (timeWaitingForPlane >= PLANE_DETECTION_TIMEOUT)
+        {
+            if (Camera.main != null)
+            {
+                hitSuccessful = true;
+                Vector3 spawnPos = Camera.main.transform.position + Camera.main.transform.forward * 1.2f + Vector3.down * 0.3f;
+                hitPose = new Pose(spawnPos, Quaternion.identity);
+                Debug.Log($"[JengaAR] Timeout: Torre apareció sin detección de plano en {hitPose.position}");
+            }
         }
         #if UNITY_EDITOR
         else
         {
-            // Fallback directo: Aparecer 1.5 metros al frente y medio metro abajo de la cámara
+            // Fallback para editor
             if (Camera.main != null)
             {
                 hitSuccessful = true;
-                Vector3 spawnPos = Camera.main.transform.position + Camera.main.transform.forward * 1.5f + Vector3.down * 0.5f;
+                Vector3 spawnPos = Camera.main.transform.position + Camera.main.transform.forward * 1.2f + Vector3.down * 0.3f;
                 hitPose = new Pose(spawnPos, Quaternion.identity);
-                Debug.Log($"[JengaAR] Editor Fallback: Torre forzada en {hitPose.position}");
+                Debug.Log($"[JengaAR] Editor: Torre forzada en {hitPose.position}");
             }
         }
 #endif
@@ -107,22 +117,17 @@ public class PlaceObjectOnPlane : MonoBehaviour
         {
             if (spawnedObject == null)
             {
-                Debug.Log("[JengaAR] Instanciando objeto por primera vez.");
+                Debug.Log("[JengaAR] Instanciando Jenga por primera vez.");
                 spawnedObject = Instantiate(objectToPlace, hitPose.position, hitPose.rotation);
                 
-                // Deshabilitar este script para no mover la torre durante el juego
                 this.enabled = false;
-                Debug.Log("[JengaAR] PlaceObjectOnPlane deshabilitado para iniciar el juego.");
+                Debug.Log("[JengaAR] PlaceObjectOnPlane deshabilitado - Juego iniciado.");
             }
             else
             {
                 spawnedObject.transform.position = hitPose.position;
                 spawnedObject.transform.rotation = hitPose.rotation;
             }
-        }
-        else
-        {
-            Debug.Log("[JengaAR] Raycast NO pegó en ningún plano válido.");
         }
     }
 
