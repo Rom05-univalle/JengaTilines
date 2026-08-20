@@ -50,6 +50,32 @@ public class PlaceObjectOnPlane : MonoBehaviour
             Debug.Log("[JengaAR] Tiempo esperando plano: " + timeWaitingForPlane.ToString("F1") + "s");
         }
 
+        // --- Spawneo Automático al Detectar Primer Plano (Solo en dispositivo móvil) ---
+        #if !UNITY_EDITOR
+        if (spawnedObject == null && planeManager != null && planeManager.trackables.count > 0)
+        {
+            foreach (var plane in planeManager.trackables)
+            {
+                if (plane.trackingState == TrackingState.Tracking)
+                {
+                    // Obtener la posición del centro del plano
+                    Vector3 planePosition = plane.center;
+                    
+                    // Forzar rotación perfectamente vertical
+                    Quaternion uprightRotation = Quaternion.Euler(0, plane.transform.rotation.eulerAngles.y, 0);
+
+                    Debug.Log($"[JengaAR] Plano detectado automáticamente en {planePosition}. Spawneando Jenga.");
+                    
+                    spawnedObject = Instantiate(objectToPlace, planePosition, uprightRotation);
+                    spawnedObject.transform.SetParent(null); // Desvincular de cualquier padre (como la cámara) para dejarlo fijo en el mundo
+                    this.enabled = false;
+                    Debug.Log("[JengaAR] PlaceObjectOnPlane deshabilitado por spawn automático.");
+                    return;
+                }
+            }
+        }
+        #endif
+
         Vector2 screenPosition = Vector2.zero;
         bool touchDetected = false;
 
@@ -122,6 +148,7 @@ public class PlaceObjectOnPlane : MonoBehaviour
             {
                 Debug.Log("[JengaAR] Instanciando Jenga por primera vez.");
                 spawnedObject = Instantiate(objectToPlace, hitPose.position, uprightRotation);
+                spawnedObject.transform.SetParent(null); // Desvincular de cualquier padre (como la cámara) para dejarlo fijo en el mundo
                 
                 this.enabled = false;
                 Debug.Log("[JengaAR] PlaceObjectOnPlane deshabilitado - Juego iniciado.");
