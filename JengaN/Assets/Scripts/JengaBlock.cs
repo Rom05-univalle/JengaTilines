@@ -81,7 +81,7 @@ public class JengaBlock : MonoBehaviour
         // Regresar a la posición inicial en local
         transform.localPosition = startLocalPosition;
         transform.localRotation = startLocalRotation;
-        SetKinematic(true);  // Mantener congelado - NO liberar kinematic
+        SetKinematic(false);  // Volver a hacerlo dinámico para que le afecte la gravedad
         SetSelected(false, Color.clear);
         
         if (rb != null)

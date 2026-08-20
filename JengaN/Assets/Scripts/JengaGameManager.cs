@@ -73,6 +73,9 @@ public class JengaGameManager : MonoBehaviour
 
     void Start()
     {
+        // Incrementar frecuencia física para máxima precisión y estabilidad
+        Time.fixedDeltaTime = 0.005f;
+
         // Guardar la altura base (Y) del spawn
         baseHeight = transform.position.y;
         
@@ -285,18 +288,27 @@ public class JengaGameManager : MonoBehaviour
     }
 
     private IEnumerator EnableCollapseCheckingAfterDelay()
-{
-    canCheckCollapse = false;
-
-    Debug.Log("[JengaAR] Torre generada - Todos los bloques KINEMATIC (permanecerán así).");
-    
-    // Solo esperar a que todo esté listo
-    yield return new WaitForSeconds(2.0f);
-    
-    canCheckCollapse = true;
-    Debug.Log("[JengaAR] Torre lista. Sistema en modo KINEMATIC permanente.");
-    Debug.Log("[JengaAR] Los bloques SOLO se liberan cuando necesitan verificar caída.");
-}
+    {
+        canCheckCollapse = false;
+        yield return new WaitForSeconds(0.5f); // Esperar un instante inicial
+        
+        // Habilitar física para todos los bloques desactivando kinematic
+        if (towerGenerator != null)
+        {
+            foreach (var block in towerGenerator.AllBlocks)
+            {
+                if (block != null)
+                {
+                    block.SetKinematic(false);
+                }
+            }
+            Debug.Log("[JengaAR] Físicas activadas en todos los bloques (isKinematic = false).");
+        }
+        
+        yield return new WaitForSeconds(1.5f); // Tiempo de gracia para asentamiento físico bajo gravedad
+        canCheckCollapse = true;
+        Debug.Log("[JengaAR] Monitoreo de colapso de la torre activado.");
+    }
 
     private bool CheckIfTowerCollapsed()
     {

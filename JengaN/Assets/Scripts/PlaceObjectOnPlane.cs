@@ -115,10 +115,13 @@ public class PlaceObjectOnPlane : MonoBehaviour
 
         if (hitSuccessful)
         {
+            // Forzar rotación perfectamente vertical (alineada con la gravedad) para evitar inclinación de la torre
+            Quaternion uprightRotation = Quaternion.Euler(0, hitPose.rotation.eulerAngles.y, 0);
+
             if (spawnedObject == null)
             {
                 Debug.Log("[JengaAR] Instanciando Jenga por primera vez.");
-                spawnedObject = Instantiate(objectToPlace, hitPose.position, hitPose.rotation);
+                spawnedObject = Instantiate(objectToPlace, hitPose.position, uprightRotation);
                 
                 this.enabled = false;
                 Debug.Log("[JengaAR] PlaceObjectOnPlane deshabilitado - Juego iniciado.");
@@ -126,7 +129,7 @@ public class PlaceObjectOnPlane : MonoBehaviour
             else
             {
                 spawnedObject.transform.position = hitPose.position;
-                spawnedObject.transform.rotation = hitPose.rotation;
+                spawnedObject.transform.rotation = uprightRotation;
             }
         }
     }

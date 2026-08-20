@@ -77,11 +77,28 @@ public class JengaTowerGenerator : MonoBehaviour
         basePlate.transform.localPosition = new Vector3(0, -0.05f, 0); // Su centro a -5cm, la parte superior queda en Y=0
         basePlate.transform.localScale = new Vector3(blockLength * 1.3f, 0.1f, blockLength * 1.3f);
         
-        // Asignar color oscuro estético
+        // Asignar color oscuro estético con sombreador compatible (evita el color magenta de error en URP)
         MeshRenderer baseRenderer = basePlate.GetComponent<MeshRenderer>();
-        if (baseRenderer != null && baseRenderer.material != null)
+        if (baseRenderer != null)
         {
-            baseRenderer.material.color = new Color(0.12f, 0.12f, 0.12f);
+            Shader urpShader = Shader.Find("Universal Render Pipeline/Lit");
+            if (urpShader != null)
+            {
+                baseRenderer.material = new Material(urpShader);
+            }
+            else
+            {
+                Shader standardShader = Shader.Find("Standard");
+                if (standardShader != null)
+                {
+                    baseRenderer.material = new Material(standardShader);
+                }
+            }
+
+            if (baseRenderer.material != null)
+            {
+                baseRenderer.material.color = new Color(0.12f, 0.12f, 0.12f);
+            }
         }
 
         // Configurar físicas de la base
@@ -154,7 +171,7 @@ public class JengaTowerGenerator : MonoBehaviour
                 Rigidbody rb = blockObj.GetComponent<Rigidbody>();
                 if (rb == null) rb = blockObj.AddComponent<Rigidbody>();
                 
-                rb.mass = 0.05f;
+                rb.mass = 0.5f;
                 rb.linearDamping = 1.5f;   // Alto damping para evitar oscilaciones
                 rb.angularDamping = 1.5f;  // Alto damping para evitar rotaciones
                 rb.isKinematic = true;  // KINEMATIC al inicio - congelado para estabilidad
