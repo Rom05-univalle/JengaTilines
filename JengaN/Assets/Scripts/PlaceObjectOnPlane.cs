@@ -18,6 +18,8 @@ public class PlaceObjectOnPlane : MonoBehaviour
     private GameObject spawnedObject;
     private float timeWaitingForPlane = 0f;
     private const float PLANE_DETECTION_TIMEOUT = 5f;  // Timeout de 5 segundos
+    private Pose lastSpawnPose;
+    private bool hasLastSpawnPose = false;
 
     void Awake()
     {
@@ -58,11 +60,13 @@ public class PlaceObjectOnPlane : MonoBehaviour
             {
                 if (plane.trackingState == TrackingState.Tracking)
                 {
-                    // Obtener la posición del centro del plano
-                    Vector3 planePosition = plane.center;
+                    // Convertir el centro local del plano a coordenadas mundiales reales
+                    Vector3 planePosition = plane.transform.TransformPoint(plane.center);
                     
                     // Forzar rotación perfectamente vertical
                     Quaternion uprightRotation = Quaternion.Euler(0, plane.transform.rotation.eulerAngles.y, 0);
+                    lastSpawnPose = new Pose(planePosition, uprightRotation);
+                    hasLastSpawnPose = true;
 
                     Debug.Log($"[JengaAR] Plano detectado automáticamente en {planePosition}. Spawneando Jenga.");
                     
@@ -111,6 +115,8 @@ public class PlaceObjectOnPlane : MonoBehaviour
         {
             hitSuccessful = true;
             hitPose = hits[0].pose;
+            lastSpawnPose = hitPose;
+            hasLastSpawnPose = true;
             Debug.Log($"[JengaAR] Raycast pegó en un plano. Hits: {hits.Count} en {hitPose.position}");
             timeWaitingForPlane = 0f;  // Reset timeout cuando detecta
         }
@@ -143,6 +149,8 @@ public class PlaceObjectOnPlane : MonoBehaviour
         {
             // Forzar rotación perfectamente vertical (alineada con la gravedad) para evitar inclinación de la torre
             Quaternion uprightRotation = Quaternion.Euler(0, hitPose.rotation.eulerAngles.y, 0);
+            lastSpawnPose = new Pose(hitPose.position, uprightRotation);
+            hasLastSpawnPose = true;
 
             if (spawnedObject == null)
             {
@@ -170,5 +178,26 @@ public class PlaceObjectOnPlane : MonoBehaviour
         }
         this.enabled = true;
         Debug.Log("[JengaAR] PlaceObjectOnPlane re-habilitado para nuevo posicionamiento.");
+    }
+
+    public void RestartAtLastSpawnPose()
+    {
+        if (!hasLastSpawnPose)
+        {
+            ResetSpawning();
+            return;
+        }
+
+        if (spawnedObject != null)
+        {
+            Destroy(spawnedObject);
+            spawnedObject = null;
+        }
+
+        spawnedObject = Instantiate(objectToPlace, lastSpawnPose.position, lastSpawnPose.rotation);
+        spawnedObject.transform.SetParent(null);
+        this.enabled = false;
+
+        Debug.Log("[JengaAR] Jenga reiniciado en la última pose válida.");
     }
 }
