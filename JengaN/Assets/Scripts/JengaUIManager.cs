@@ -6,6 +6,7 @@ public class JengaUIManager : MonoBehaviour
     private GameObject uiCanvas;
     
     // UI Elements References
+    // nuevo comentario
     private Text turnText;
     private Image turnBackground;
     private GameObject trackingWarningPanel;
