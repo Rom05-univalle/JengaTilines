@@ -72,25 +72,31 @@ public class JengaGameManager : MonoBehaviour
     }
 
     void Start()
-    {
-        // Incrementar frecuencia física para máxima precisión y estabilidad
-        Time.fixedDeltaTime = 0.005f;
+{
+    // Incrementar frecuencia física para máxima precisión y estabilidad
+    Time.fixedDeltaTime = 0.005f;
 
-        // Guardar la altura base (Y) del spawn
-        baseHeight = transform.position.y;
-        
-        // Generar la torre e iniciar la partida
-        if (towerGenerator != null)
-        {
-            towerGenerator.GenerateTower();
-            StartGame();
-            StartCoroutine(EnableCollapseCheckingAfterDelay());
-        }
-        else
-        {
-            Debug.LogError("[JengaAR] JengaTowerGenerator es null en GameManager.");
-        }
+    // Guardar la altura base (Y) del spawn
+    baseHeight = transform.position.y;
+    
+    // Ocultar / Desactivar la advertencia de AR inestable (ya no se usa AR Foundation)
+    if (uiManager != null)
+    {
+        uiManager.SetTrackingWarningActive(false);
     }
+
+    // Generar la torre e iniciar la partida
+    if (towerGenerator != null)
+    {
+        towerGenerator.GenerateTower();
+        StartGame();
+        StartCoroutine(EnableCollapseCheckingAfterDelay());
+    }
+    else
+    {
+        Debug.LogError("[JengaAR] JengaTowerGenerator es null en GameManager.");
+    }
+}
 
     void Update()
     {
@@ -112,20 +118,20 @@ public class JengaGameManager : MonoBehaviour
         // En AR Foundation, si el estado de la sesión no está en Tracking, consideramos seguimiento inestable
         bool currentTracking = (ARSession.state == ARSessionState.SessionTracking);
         
-        #if UNITY_EDITOR
-        // En el editor, forzar siempre que el tracking sea estable para poder depurar con el mouse
-        currentTracking = true;
-        #endif
+        // #if UNITY_EDITOR
+        // // En el editor, forzar siempre que el tracking sea estable para poder depurar con el mouse
+        // currentTracking = true;
+        // #endif
         
-        if (currentTracking != isTrackingStable)
-        {
-            isTrackingStable = currentTracking;
-            if (uiManager != null)
-            {
-                uiManager.SetTrackingWarningActive(!isTrackingStable);
-            }
-            Debug.Log($"[JengaAR] Estado de seguimiento AR cambiado: Estable = {isTrackingStable}");
-        }
+        // if (currentTracking != isTrackingStable)
+        // {
+        //     isTrackingStable = currentTracking;
+        //     if (uiManager != null)
+        //     {
+        //         uiManager.SetTrackingWarningActive(!isTrackingStable);
+        //     }
+        //     Debug.Log($"[JengaAR] Estado de seguimiento AR cambiado: Estable = {isTrackingStable}");
+        // }
     }
 
     public void StartGame()
@@ -356,13 +362,18 @@ public class JengaGameManager : MonoBehaviour
         PlaceObjectOnPlane placeScript = FindAnyObjectByType<PlaceObjectOnPlane>();
         if (placeScript != null)
         {
-            placeScript.ResetSpawning();
+            placeScript.RestartAtLastSpawnPose();
         }
         else
         {
             // Si no se encuentra (caso de pruebas editor), simplemente limpiar y regenerar localmente
-            towerGenerator.GenerateTower();
+            if (towerGenerator != null)
+            {
+                towerGenerator.ClearTower();
+                towerGenerator.GenerateTower();
+            }
             StartGame();
+            StartCoroutine(EnableCollapseCheckingAfterDelay());
         }
     }
 }
