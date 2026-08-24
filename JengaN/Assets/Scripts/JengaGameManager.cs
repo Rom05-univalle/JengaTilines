@@ -30,10 +30,14 @@ public class JengaGameManager : MonoBehaviour
     [Header("Highlight Settings")]
     [SerializeField] private Color selectionHighlightColor = new Color(0.9f, 0.8f, 0.1f); // Dorado brillante
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip startSound;
+
     // Referencias locales
     private JengaTowerGenerator towerGenerator;
     private JengaUIManager uiManager;
     private JengaInteractionManager interactionManager;
+    private AudioSource collapseAudioSource;
 
     // Estados de juego
     private JengaGameState currentState = JengaGameState.Setup;
@@ -42,6 +46,8 @@ public class JengaGameManager : MonoBehaviour
     private float baseHeight = 0f;
     private bool isTrackingStable = true;
     private bool canCheckCollapse = false;
+    private bool towerPhysicsActive = false;
+    private readonly HashSet<int> levelsWithRemovedBlocks = new HashSet<int>();
 
     public JengaGameState CurrentState => currentState;
     public int ActivePlayerIndex => activePlayerIndex;
@@ -69,6 +75,8 @@ public class JengaGameManager : MonoBehaviour
         
         interactionManager = GetComponent<JengaInteractionManager>();
         if (interactionManager == null) interactionManager = gameObject.AddComponent<JengaInteractionManager>();
+
+        collapseAudioSource = GetComponent<AudioSource>();
     }
 
     void Start()
@@ -86,12 +94,17 @@ public class JengaGameManager : MonoBehaviour
     }
 
     // Generar la torre e iniciar la partida
-    if (towerGenerator != null)
-    {
-        towerGenerator.GenerateTower();
-        StartGame();
-        StartCoroutine(EnableCollapseCheckingAfterDelay());
-    }
+        if (towerGenerator != null)
+        {
+            towerGenerator.GenerateTower();
+            StartGame();
+            StartCoroutine(EnableCollapseCheckingAfterDelay());
+
+            if (collapseAudioSource != null && startSound != null)
+            {
+                collapseAudioSource.PlayOneShot(startSound);
+            }
+        }
     else
     {
         Debug.LogError("[JengaAR] JengaTowerGenerator es null en GameManager.");
@@ -138,6 +151,8 @@ public class JengaGameManager : MonoBehaviour
     {
         activePlayerIndex = 0;
         selectedBlock = null;
+        towerPhysicsActive = false;
+        levelsWithRemovedBlocks.Clear();
         currentState = JengaGameState.PlayerTurn;
         
         if (uiManager != null)
@@ -195,6 +210,14 @@ public class JengaGameManager : MonoBehaviour
             return;
 
         currentState = JengaGameState.BlockPulled;
+        int removedLevel = selectedBlock.Level;
+
+        // Una pieza por nivel conserva soporte suficiente. La segunda retirada
+        // del mismo nivel deja esa fila inestable y habilita el derrumbe físico.
+        if (!levelsWithRemovedBlocks.Add(removedLevel))
+        {
+            ActivateTowerPhysicsAfterRepeatedLevelPull();
+        }
         if (uiManager != null)
         {
             uiManager.SetActionButtonActive(true);
@@ -214,6 +237,13 @@ public class JengaGameManager : MonoBehaviour
 
         // Colocar el bloque en la cima a través del generador
         towerGenerator.AddBlockToTop(selectedBlock);
+
+        // Mientras solo se haya retirado una pieza, la torre sigue fija para
+        // cumplir la regla de una extracción segura.
+        if (!towerPhysicsActive)
+        {
+            selectedBlock.SetKinematic(true);
+        }
         
         // Entrar en fase de asentamiento para dejar que las físicas actúen
         StartCoroutine(SettlingRoutine());
@@ -296,24 +326,38 @@ public class JengaGameManager : MonoBehaviour
     private IEnumerator EnableCollapseCheckingAfterDelay()
     {
         canCheckCollapse = false;
-        yield return new WaitForSeconds(0.5f); // Esperar un instante inicial
-        
-        // Habilitar física para todos los bloques desactivando kinematic
-        if (towerGenerator != null)
-        {
-            foreach (var block in towerGenerator.AllBlocks)
-            {
-                if (block != null)
-                {
-                    block.SetKinematic(false);
-                }
-            }
-            Debug.Log("[JengaAR] Físicas activadas en todos los bloques (isKinematic = false).");
-        }
-        
-        yield return new WaitForSeconds(1.5f); // Tiempo de gracia para asentamiento físico bajo gravedad
+        // La torre nace ya asentada, como un Jenga real antes del primer turno.
+        // No se liberan los Rigidbody aquí porque Vuforia aún puede corregir la
+        // pose del ImageTarget durante los primeros instantes.
+        yield return new WaitForSeconds(0.75f);
         canCheckCollapse = true;
         Debug.Log("[JengaAR] Monitoreo de colapso de la torre activado.");
+    }
+
+    private void ActivateTowerPhysicsAfterRepeatedLevelPull()
+    {
+        if (towerGenerator == null || towerPhysicsActive)
+            return;
+
+        towerPhysicsActive = true;
+
+        foreach (var block in towerGenerator.AllBlocks)
+        {
+            // El bloque retirado sigue cinemático mientras se muestra sobre la
+            // torre; todos los demás pasan a responder a gravedad y colisiones.
+            if (block == null || block == selectedBlock)
+                continue;
+
+            Rigidbody rb = block.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            block.SetKinematic(false);
+        }
+
+        Debug.Log("[JengaAR] Física de la torre activada tras retirar una segunda pieza del mismo nivel.");
     }
 
     private bool CheckIfTowerCollapsed()
@@ -346,6 +390,11 @@ public class JengaGameManager : MonoBehaviour
     {
         StopAllCoroutines();
         currentState = JengaGameState.GameOver;
+
+        if (collapseAudioSource != null && collapseAudioSource.clip != null)
+        {
+            collapseAudioSource.PlayOneShot(collapseAudioSource.clip);
+        }
         
         if (uiManager != null)
         {

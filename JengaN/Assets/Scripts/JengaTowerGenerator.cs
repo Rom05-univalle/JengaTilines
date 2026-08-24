@@ -23,7 +23,7 @@ public class JengaTowerGenerator : MonoBehaviour
     };
 
     private List<JengaBlock> allBlocks = new List<JengaBlock>();
-    private float verticalGap = 0.002f; // Espacio de seguridad vertical mínimo (aumentado para estabilidad)
+    private float verticalGap = 0.0001f;
     
     // Tracking current tower state
     private int topLevel = 17;
@@ -43,8 +43,8 @@ public class JengaTowerGenerator : MonoBehaviour
         // Generar material de física con alta fricción y cero rebote en ejecución
         blockPhysicsMaterial = new PhysicsMaterial("JengaFrictionMaterial")
         {
-            staticFriction = 0.7f,
-            dynamicFriction = 0.6f,
+            staticFriction = 0.95f,
+            dynamicFriction = 0.85f,
             bounciness = 0.0f,
             frictionCombine = PhysicsMaterialCombine.Maximum,
             bounceCombine = PhysicsMaterialCombine.Minimum
@@ -105,7 +105,7 @@ public class JengaTowerGenerator : MonoBehaviour
         BoxCollider baseCol = basePlate.GetComponent<BoxCollider>();
         if (baseCol == null) baseCol = basePlate.AddComponent<BoxCollider>();
         baseCol.sharedMaterial = blockPhysicsMaterial;
-        baseCol.contactOffset = 0.005f;  // AUMENTADO para evitar penetraciones
+        baseCol.contactOffset = 0.0005f;
 
         Rigidbody baseRb = basePlate.GetComponent<Rigidbody>();
         if (baseRb == null) baseRb = basePlate.AddComponent<Rigidbody>();
@@ -119,7 +119,7 @@ public class JengaTowerGenerator : MonoBehaviour
         Physics.defaultMaxDepenetrationVelocity = 1.5f;  // Resolver lentamente
         Physics.gravity = new Vector3(0, -9.81f, 0);  // Gravedad NORMAL
 
-        float verticalGap = 0.002f;  // Espacio vertical también aumentado
+        float verticalGap = 0.0001f;
         float baseSurfaceY = 0.0f;   // La superficie superior de la placa base está en Y = 0
 
         for (int l = 0; l < numLevels; l++)
@@ -182,7 +182,7 @@ public class JengaTowerGenerator : MonoBehaviour
                 BoxCollider col = blockObj.GetComponent<BoxCollider>();
                 if (col == null) col = blockObj.AddComponent<BoxCollider>();
                 col.sharedMaterial = blockPhysicsMaterial;
-                col.contactOffset = 0.001f;  // Pequeño pero estable
+                col.contactOffset = 0.0005f;
 
                 // Añadir script de comportamiento de bloque
                 JengaBlock jengaBlock = blockObj.GetComponent<JengaBlock>();
